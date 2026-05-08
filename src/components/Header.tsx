@@ -68,6 +68,7 @@ export function Header() {
             {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="block py-2 text-sm">Dashboard</Link>}
             {user && <Link to="/deposit" onClick={() => setOpen(false)} className="block py-2 text-sm">Deposit</Link>}
             {user && <Link to="/chat" onClick={() => setOpen(false)} className="block py-2 text-sm">Support</Link>}
+            {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="block py-2 text-sm text-primary font-medium">Admin</Link>}
             <Link to="/about" onClick={() => setOpen(false)} className="block py-2 text-sm">About</Link>
             <div className="pt-2">
               {user ? (
