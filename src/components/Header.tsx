@@ -37,6 +37,7 @@ export function Header() {
             {user && <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>}
             {user && <Link to="/deposit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deposit</Link>}
             {user && <Link to="/chat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>}
+            {isAdmin && <Link to="/admin" className="text-sm text-primary hover:text-primary/80 font-medium transition-colors">Admin</Link>}
             <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
           </nav>
 
