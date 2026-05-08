@@ -128,7 +128,7 @@ function AdminPage() {
     }
   };
 
-  const filtered = deposits.filter((d) => d.status === tab);
+  const filtered = tab === "users" ? [] : deposits.filter((d) => d.status === tab);
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
