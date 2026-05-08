@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/hero-bg.jpg";
+import heroBg from "@/assets/tesla-hero.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -93,8 +93,8 @@ function Index() {
       {/* Hero */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img src={heroBg} alt="" className="w-full h-full object-cover opacity-20" width={1920} height={1080} />
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+          <img src={heroBg} alt="Red Tesla on black" className="w-full h-full object-cover opacity-60" width={1920} height={1080} />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background" />
         </div>
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16">
           <div className="max-w-3xl mx-auto text-center animate-slide-up">
