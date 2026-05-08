@@ -1,12 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Header() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -19,38 +21,46 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</Link>
             <Link to="/markets" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Markets</Link>
+            {user && <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>}
+            {user && <Link to="/deposit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deposit</Link>}
+            {user && <Link to="/chat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>}
             <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">Sign In</Button>
-            <Button variant="hero" size="sm">Get Started</Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={() => signOut()}>Sign Out</Button>
+            ) : (
+              <>
+                <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
+                <Link to="/auth"><Button variant="hero" size="sm">Get Started</Button></Link>
+              </>
+            )}
           </div>
 
-          <button
-            className="md:hidden text-foreground"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
+          <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {open
+                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
           </button>
         </div>
 
-        {mobileOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link to="/" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Home</Link>
-            <Link to="/markets" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Markets</Link>
-            <Link to="/about" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>About</Link>
-            <Link to="/contact" className="block py-2 text-sm text-muted-foreground" onClick={() => setMobileOpen(false)}>Contact</Link>
-            <div className="pt-2 flex gap-2">
-              <Button variant="ghost" size="sm" className="flex-1">Sign In</Button>
-              <Button variant="hero" size="sm" className="flex-1">Get Started</Button>
+        {open && (
+          <div className="md:hidden pb-4 space-y-1">
+            <Link to="/" onClick={() => setOpen(false)} className="block py-2 text-sm">Home</Link>
+            <Link to="/markets" onClick={() => setOpen(false)} className="block py-2 text-sm">Markets</Link>
+            {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="block py-2 text-sm">Dashboard</Link>}
+            {user && <Link to="/deposit" onClick={() => setOpen(false)} className="block py-2 text-sm">Deposit</Link>}
+            {user && <Link to="/chat" onClick={() => setOpen(false)} className="block py-2 text-sm">Support</Link>}
+            <Link to="/about" onClick={() => setOpen(false)} className="block py-2 text-sm">About</Link>
+            <div className="pt-2">
+              {user ? (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => signOut()}>Sign Out</Button>
+              ) : (
+                <Link to="/auth" onClick={() => setOpen(false)}><Button variant="hero" size="sm" className="w-full">Sign In</Button></Link>
+              )}
             </div>
           </div>
         )}

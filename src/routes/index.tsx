@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -109,12 +110,12 @@ function Index() {
               AI-powered investment platform with real-time analytics, smart portfolio management, and access to global markets — all in one place.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button variant="hero" size="lg" className="w-full sm:w-auto text-base px-8 py-6">
+              <Link to="/auth"><Button variant="hero" size="lg" className="w-full sm:w-auto text-base px-8 py-6">
                 Start Investing Free
-              </Button>
-              <Button variant="heroOutline" size="lg" className="w-full sm:w-auto text-base px-8 py-6">
+              </Button></Link>
+              <Link to="/markets"><Button variant="heroOutline" size="lg" className="w-full sm:w-auto text-base px-8 py-6">
                 View Markets
-              </Button>
+              </Button></Link>
             </div>
           </div>
         </div>
@@ -172,9 +173,9 @@ function Index() {
                 Join thousands of investors who trust ElonTesla for smarter, faster, and more profitable investing.
               </p>
               <div className="mt-8">
-                <Button variant="hero" size="lg" className="text-base px-10 py-6">
+                <Link to="/auth"><Button variant="hero" size="lg" className="text-base px-10 py-6">
                   Create Free Account
-                </Button>
+                </Button></Link>
               </div>
             </div>
           </div>
