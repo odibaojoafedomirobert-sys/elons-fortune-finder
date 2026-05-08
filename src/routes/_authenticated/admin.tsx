@@ -26,8 +26,17 @@ interface DepositRow {
   admin_note: string | null;
   created_at: string;
   reviewed_at: string | null;
-  profile?: { email: string | null; display_name: string | null; balance: number } | null;
+  profile?: { email: string | null; display_name: string | null; full_name: string | null; phone: string | null; balance: number } | null;
 }
+
+interface UserRow {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  full_name: string | null;
+  phone: string | null;
+  balance: number;
+  created_at: string;
 
 const fmt = (n: number) =>
   `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
