@@ -25,7 +25,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [form, setForm] = useState({ email: "", password: "", displayName: "" });
+  const [form, setForm] = useState({ email: "", password: "", fullName: "", phone: "" });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
