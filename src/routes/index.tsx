@@ -110,7 +110,6 @@ function Index() {
               AI-powered investment platform with real-time analytics, smart portfolio management, and access to global markets — all in one place.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/auth"><Button variant="hero" size="lg" className="w-full sm:w-auto text-base px-8 py-6">
                 Start Investing Free
               </Button></Link>
