@@ -151,13 +151,32 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="users" className="mt-6 space-y-3">
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : users.length === 0 ? (
+                <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">No users yet.</div>
+              ) : (
+                users.map((u) => (
+                  <div key={u.id} className="glass-card rounded-2xl p-5">
+                    <p className="font-semibold">{u.full_name ?? u.display_name ?? "—"}</p>
+                    <p className="text-sm text-muted-foreground">Email: <span className="text-foreground">{u.email ?? "—"}</span></p>
+                    <p className="text-sm text-muted-foreground">Phone: <span className="text-foreground">{u.phone ?? "—"}</span></p>
+                    <p className="text-sm text-muted-foreground">Balance: <span className="text-foreground font-mono">{fmt(Number(u.balance ?? 0))}</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">Joined {new Date(u.created_at).toLocaleString()}</p>
+                  </div>
+                ))
+              )}
+            </TabsContent>
 
             <TabsContent value={tab} className="mt-6 space-y-4">
               {loading ? (
