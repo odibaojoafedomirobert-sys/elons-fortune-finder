@@ -1,11 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b">
@@ -24,6 +37,7 @@ export function Header() {
             {user && <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>}
             {user && <Link to="/deposit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deposit</Link>}
             {user && <Link to="/chat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>}
+            {isAdmin && <Link to="/admin" className="text-sm text-primary hover:text-primary/80 font-medium transition-colors">Admin</Link>}
             <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
           </nav>
 
@@ -54,6 +68,7 @@ export function Header() {
             {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="block py-2 text-sm">Dashboard</Link>}
             {user && <Link to="/deposit" onClick={() => setOpen(false)} className="block py-2 text-sm">Deposit</Link>}
             {user && <Link to="/chat" onClick={() => setOpen(false)} className="block py-2 text-sm">Support</Link>}
+            {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="block py-2 text-sm text-primary font-medium">Admin</Link>}
             <Link to="/about" onClick={() => setOpen(false)} className="block py-2 text-sm">About</Link>
             <div className="pt-2">
               {user ? (
