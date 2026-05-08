@@ -14,16 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deposits: {
+        Row: {
+          admin_note: string | null
+          amount_usd: number
+          created_at: string
+          id: string
+          method: Database["public"]["Enums"]["deposit_method"]
+          notes: string | null
+          proof_url: string
+          reviewed_at: string | null
+          status: Database["public"]["Enums"]["deposit_status"]
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_usd: number
+          created_at?: string
+          id?: string
+          method: Database["public"]["Enums"]["deposit_method"]
+          notes?: string | null
+          proof_url: string
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["deposit_status"]
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          method?: Database["public"]["Enums"]["deposit_method"]
+          notes?: string | null
+          proof_url?: string
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["deposit_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      investments: {
+        Row: {
+          amount_invested: number
+          created_at: string
+          current_value: number
+          id: string
+          plan_name: string
+          roi_percent: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_invested: number
+          created_at?: string
+          current_value: number
+          id?: string
+          plan_name: string
+          roi_percent?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_invested?: number
+          created_at?: string
+          current_value?: number
+          id?: string
+          plan_name?: string
+          roi_percent?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          balance: number
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_from_admin: boolean
+          sender_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_from_admin?: boolean
+          sender_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_from_admin?: boolean
+          sender_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      deposit_method: "bitcoin" | "giftcard"
+      deposit_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +307,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      deposit_method: ["bitcoin", "giftcard"],
+      deposit_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
