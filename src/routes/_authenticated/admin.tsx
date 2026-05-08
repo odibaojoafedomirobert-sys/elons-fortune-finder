@@ -26,7 +26,17 @@ interface DepositRow {
   admin_note: string | null;
   created_at: string;
   reviewed_at: string | null;
-  profile?: { email: string | null; display_name: string | null; balance: number } | null;
+  profile?: { email: string | null; display_name: string | null; full_name: string | null; phone: string | null; balance: number } | null;
+}
+
+interface UserRow {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  full_name: string | null;
+  phone: string | null;
+  balance: number;
+  created_at: string;
 }
 
 const fmt = (n: number) =>
@@ -37,8 +47,9 @@ function AdminPage() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "users">("pending");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -64,22 +75,18 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("deposits")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    const rows = (data ?? []) as DepositRow[];
-    const ids = Array.from(new Set(rows.map((r) => r.user_id)));
-    if (ids.length) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id,email,display_name,balance")
-        .in("id", ids);
-      const map = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-      rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
-    }
+    const [depRes, usrRes] = await Promise.all([
+      supabase.from("deposits").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
+    ]);
+    if (depRes.error) toast.error(depRes.error.message);
+    if (usrRes.error) toast.error(usrRes.error.message);
+    const rows = (depRes.data ?? []) as DepositRow[];
+    const profiles = (usrRes.data ?? []) as UserRow[];
+    const map = new Map(profiles.map((p) => [p.id, p]));
+    rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
     setDeposits(rows);
+    setUsers(profiles);
     setLoading(false);
   }, []);
 
@@ -121,7 +128,7 @@ function AdminPage() {
     }
   };
 
-  const filtered = deposits.filter((d) => d.status === tab);
+  const filtered = tab === "users" ? [] : deposits.filter((d) => d.status === tab);
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
@@ -144,13 +151,32 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="users" className="mt-6 space-y-3">
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : users.length === 0 ? (
+                <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">No users yet.</div>
+              ) : (
+                users.map((u) => (
+                  <div key={u.id} className="glass-card rounded-2xl p-5">
+                    <p className="font-semibold">{u.full_name ?? u.display_name ?? "—"}</p>
+                    <p className="text-sm text-muted-foreground">Email: <span className="text-foreground">{u.email ?? "—"}</span></p>
+                    <p className="text-sm text-muted-foreground">Phone: <span className="text-foreground">{u.phone ?? "—"}</span></p>
+                    <p className="text-sm text-muted-foreground">Balance: <span className="text-foreground font-mono">{fmt(Number(u.balance ?? 0))}</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">Joined {new Date(u.created_at).toLocaleString()}</p>
+                  </div>
+                ))
+              )}
+            </TabsContent>
 
             <TabsContent value={tab} className="mt-6 space-y-4">
               {loading ? (

@@ -17,14 +17,15 @@ export const Route = createFileRoute("/auth")({
 const schema = z.object({
   email: z.string().trim().email().max(255),
   password: z.string().min(6).max(128),
-  displayName: z.string().trim().min(1).max(80).optional(),
+  fullName: z.string().trim().min(1).max(120).optional(),
+  phone: z.string().trim().min(5).max(30).optional(),
 });
 
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [form, setForm] = useState({ email: "", password: "", displayName: "" });
+  const [form, setForm] = useState({ email: "", password: "", fullName: "", phone: "" });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,11 @@ function AuthPage() {
           password: form.password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { display_name: form.displayName || form.email.split("@")[0] },
+            data: {
+              full_name: form.fullName,
+              phone: form.phone,
+              display_name: form.fullName || form.email.split("@")[0],
+            },
           },
         });
         if (error) throw error;
@@ -74,10 +79,16 @@ function AuthPage() {
 
           <form onSubmit={submit} className="mt-6 space-y-4">
             {mode === "signup" && (
-              <div>
-                <Label htmlFor="name">Display name</Label>
-                <Input id="name" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} placeholder="John Doe" />
-              </div>
+              <>
+                <div>
+                  <Label htmlFor="name">Full name</Label>
+                  <Input id="name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} placeholder="John Doe" required />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone number</Label>
+                  <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1 555 123 4567" required />
+                </div>
+              </>
             )}
             <div>
               <Label htmlFor="email">Email</Label>
