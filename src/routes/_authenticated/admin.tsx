@@ -37,6 +37,7 @@ interface UserRow {
   phone: string | null;
   balance: number;
   created_at: string;
+}
 
 const fmt = (n: number) =>
   `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
