@@ -44,7 +44,11 @@ function AuthPage() {
           password: form.password,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { display_name: form.displayName || form.email.split("@")[0] },
+            data: {
+              full_name: form.fullName,
+              phone: form.phone,
+              display_name: form.fullName || form.email.split("@")[0],
+            },
           },
         });
         if (error) throw error;
