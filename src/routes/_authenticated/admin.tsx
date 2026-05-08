@@ -75,22 +75,18 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("deposits")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    const rows = (data ?? []) as DepositRow[];
-    const ids = Array.from(new Set(rows.map((r) => r.user_id)));
-    if (ids.length) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id,email,display_name,balance")
-        .in("id", ids);
-      const map = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-      rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
-    }
+    const [depRes, usrRes] = await Promise.all([
+      supabase.from("deposits").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
+    ]);
+    if (depRes.error) toast.error(depRes.error.message);
+    if (usrRes.error) toast.error(usrRes.error.message);
+    const rows = (depRes.data ?? []) as DepositRow[];
+    const profiles = (usrRes.data ?? []) as UserRow[];
+    const map = new Map(profiles.map((p) => [p.id, p]));
+    rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
     setDeposits(rows);
+    setUsers(profiles);
     setLoading(false);
   }, []);
 
