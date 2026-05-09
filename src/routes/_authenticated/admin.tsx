@@ -206,6 +206,57 @@ function AdminPage() {
               <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="withdrawals" className="mt-6 space-y-3">
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : withdrawals.length === 0 ? (
+                <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">No withdrawal requests.</div>
+              ) : (
+                withdrawals.map((w) => (
+                  <div key={w.id} className="glass-card rounded-2xl p-5">
+                    <div className="flex flex-wrap justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-semibold">{w.profile?.full_name ?? "—"} <span className="text-xs text-muted-foreground font-normal">({w.profile?.email ?? "—"})</span></p>
+                        <p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleString()}</p>
+                      </div>
+                      <span className={`text-xs uppercase font-semibold self-start px-2 py-1 rounded ${
+                        w.status === "paid" || w.status === "approved" ? "bg-success/20 text-success"
+                        : w.status === "rejected" ? "bg-destructive/20 text-destructive"
+                        : "bg-muted text-muted-foreground"
+                      }`}>{w.status}</span>
+                    </div>
+                    <p className="text-sm">
+                      <span className="capitalize text-muted-foreground">{w.method}</span> ·{" "}
+                      <span className="font-mono font-bold text-lg">{fmt(Number(w.amount_usd))}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground break-all mt-1">To: {w.destination}</p>
+                    {w.notes && <p className="text-xs text-muted-foreground">User note: {w.notes}</p>}
+                    <p className="text-xs text-muted-foreground">User balance: <span className="font-mono">{fmt(Number(w.profile?.balance ?? 0))}</span></p>
+                    {w.admin_note && w.status !== "pending" && (
+                      <p className="text-xs text-muted-foreground">Admin note: {w.admin_note}</p>
+                    )}
+                    {w.status === "pending" && (
+                      <div className="mt-3 space-y-3">
+                        <Textarea placeholder="Admin note (optional)" rows={2}
+                          value={noteDraft[w.id] ?? ""}
+                          onChange={(e) => setNoteDraft((s) => ({ ...s, [w.id]: e.target.value }))} />
+                        <div className="flex gap-2 flex-wrap">
+                          <Button variant="hero" size="sm" disabled={busyId === w.id}
+                            onClick={() => decideWithdrawal(w, "paid")}>
+                            Mark Paid & Deduct {fmt(Number(w.amount_usd))}
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={busyId === w.id}
+                            onClick={() => decideWithdrawal(w, "rejected")}>
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </TabsContent>
+
             <TabsContent value="users" className="mt-6 space-y-3">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
