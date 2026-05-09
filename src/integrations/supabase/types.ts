@@ -170,6 +170,45 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          admin_note: string | null
+          amount_usd: number
+          created_at: string
+          destination: string
+          id: string
+          method: string
+          notes: string | null
+          reviewed_at: string | null
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_usd: number
+          created_at?: string
+          destination: string
+          id?: string
+          method: string
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount_usd?: number
+          created_at?: string
+          destination?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -187,6 +226,7 @@ export type Database = {
       app_role: "admin" | "user"
       deposit_method: "bitcoin" | "giftcard"
       deposit_status: "pending" | "approved" | "rejected"
+      withdrawal_status: "pending" | "approved" | "rejected" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -317,6 +357,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       deposit_method: ["bitcoin", "giftcard"],
       deposit_status: ["pending", "approved", "rejected"],
+      withdrawal_status: ["pending", "approved", "rejected", "paid"],
     },
   },
 } as const

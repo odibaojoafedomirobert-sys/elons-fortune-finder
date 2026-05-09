@@ -39,6 +39,14 @@ interface UserRow {
   created_at: string;
 }
 
+interface WithdrawalRow {
+  id: string; user_id: string; method: string; amount_usd: number;
+  destination: string; notes: string | null;
+  status: "pending" | "approved" | "rejected" | "paid";
+  admin_note: string | null; created_at: string;
+  profile?: { email: string | null; full_name: string | null; balance: number } | null;
+}
+
 const fmt = (n: number) =>
   `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -47,9 +55,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "users">("pending");
+  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users">("pending");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -75,18 +84,23 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [depRes, usrRes] = await Promise.all([
+    const [depRes, usrRes, wdrRes] = await Promise.all([
       supabase.from("deposits").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
+      supabase.from("withdrawals").select("*").order("created_at", { ascending: false }),
     ]);
     if (depRes.error) toast.error(depRes.error.message);
     if (usrRes.error) toast.error(usrRes.error.message);
+    if (wdrRes.error) toast.error(wdrRes.error.message);
     const rows = (depRes.data ?? []) as DepositRow[];
     const profiles = (usrRes.data ?? []) as UserRow[];
+    const wdrs = (wdrRes.data ?? []) as WithdrawalRow[];
     const map = new Map(profiles.map((p) => [p.id, p]));
     rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
+    wdrs.forEach((w) => { w.profile = map.get(w.user_id) ?? null; });
     setDeposits(rows);
     setUsers(profiles);
+    setWithdrawals(wdrs);
     setLoading(false);
   }, []);
 
@@ -128,7 +142,36 @@ function AdminPage() {
     }
   };
 
-  const filtered = tab === "users" ? [] : deposits.filter((d) => d.status === tab);
+  const decideWithdrawal = async (row: WithdrawalRow, status: "approved" | "rejected" | "paid") => {
+    setBusyId(row.id);
+    try {
+      const note = noteDraft[row.id] ?? row.admin_note ?? null;
+      const { error: upErr } = await supabase
+        .from("withdrawals")
+        .update({ status, admin_note: note, reviewed_at: new Date().toISOString() })
+        .eq("id", row.id);
+      if (upErr) throw upErr;
+
+      // Deduct balance on first approval/paid (only if currently pending)
+      if ((status === "approved" || status === "paid") && row.status === "pending") {
+        const currentBal = Number(row.profile?.balance ?? 0);
+        const newBal = Math.max(0, currentBal - Number(row.amount_usd));
+        const { error: balErr } = await supabase
+          .from("profiles")
+          .update({ balance: newBal })
+          .eq("id", row.user_id);
+        if (balErr) throw balErr;
+      }
+      toast.success(`Withdrawal ${status}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Action failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const filtered = tab === "users" || tab === "withdrawals" ? [] : deposits.filter((d) => d.status === tab);
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
@@ -151,14 +194,68 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="withdrawals">
+                Withdrawals ({withdrawals.filter((w) => w.status === "pending").length})
+              </TabsTrigger>
               <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="withdrawals" className="mt-6 space-y-3">
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : withdrawals.length === 0 ? (
+                <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">No withdrawal requests.</div>
+              ) : (
+                withdrawals.map((w) => (
+                  <div key={w.id} className="glass-card rounded-2xl p-5">
+                    <div className="flex flex-wrap justify-between gap-2 mb-2">
+                      <div>
+                        <p className="font-semibold">{w.profile?.full_name ?? "—"} <span className="text-xs text-muted-foreground font-normal">({w.profile?.email ?? "—"})</span></p>
+                        <p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleString()}</p>
+                      </div>
+                      <span className={`text-xs uppercase font-semibold self-start px-2 py-1 rounded ${
+                        w.status === "paid" || w.status === "approved" ? "bg-success/20 text-success"
+                        : w.status === "rejected" ? "bg-destructive/20 text-destructive"
+                        : "bg-muted text-muted-foreground"
+                      }`}>{w.status}</span>
+                    </div>
+                    <p className="text-sm">
+                      <span className="capitalize text-muted-foreground">{w.method}</span> ·{" "}
+                      <span className="font-mono font-bold text-lg">{fmt(Number(w.amount_usd))}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground break-all mt-1">To: {w.destination}</p>
+                    {w.notes && <p className="text-xs text-muted-foreground">User note: {w.notes}</p>}
+                    <p className="text-xs text-muted-foreground">User balance: <span className="font-mono">{fmt(Number(w.profile?.balance ?? 0))}</span></p>
+                    {w.admin_note && w.status !== "pending" && (
+                      <p className="text-xs text-muted-foreground">Admin note: {w.admin_note}</p>
+                    )}
+                    {w.status === "pending" && (
+                      <div className="mt-3 space-y-3">
+                        <Textarea placeholder="Admin note (optional)" rows={2}
+                          value={noteDraft[w.id] ?? ""}
+                          onChange={(e) => setNoteDraft((s) => ({ ...s, [w.id]: e.target.value }))} />
+                        <div className="flex gap-2 flex-wrap">
+                          <Button variant="hero" size="sm" disabled={busyId === w.id}
+                            onClick={() => decideWithdrawal(w, "paid")}>
+                            Mark Paid & Deduct {fmt(Number(w.amount_usd))}
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={busyId === w.id}
+                            onClick={() => decideWithdrawal(w, "rejected")}>
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </TabsContent>
 
             <TabsContent value="users" className="mt-6 space-y-3">
               {loading ? (
