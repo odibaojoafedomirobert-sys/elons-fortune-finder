@@ -55,9 +55,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "users">("pending");
+  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users">("pending");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -83,18 +84,23 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [depRes, usrRes] = await Promise.all([
+    const [depRes, usrRes, wdrRes] = await Promise.all([
       supabase.from("deposits").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
+      supabase.from("withdrawals").select("*").order("created_at", { ascending: false }),
     ]);
     if (depRes.error) toast.error(depRes.error.message);
     if (usrRes.error) toast.error(usrRes.error.message);
+    if (wdrRes.error) toast.error(wdrRes.error.message);
     const rows = (depRes.data ?? []) as DepositRow[];
     const profiles = (usrRes.data ?? []) as UserRow[];
+    const wdrs = (wdrRes.data ?? []) as WithdrawalRow[];
     const map = new Map(profiles.map((p) => [p.id, p]));
     rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
+    wdrs.forEach((w) => { w.profile = map.get(w.user_id) ?? null; });
     setDeposits(rows);
     setUsers(profiles);
+    setWithdrawals(wdrs);
     setLoading(false);
   }, []);
 
