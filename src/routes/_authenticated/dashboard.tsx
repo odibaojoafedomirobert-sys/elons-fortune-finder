@@ -55,8 +55,9 @@ function Dashboard() {
               <h1 className="text-3xl sm:text-4xl font-bold">{profile?.display_name ?? "Investor"}</h1>
             </div>
             <div className="flex gap-3">
-              <Link to="/deposit"><Button variant="hero">Deposit Funds</Button></Link>
-              <Link to="/chat"><Button variant="outline">Contact Support</Button></Link>
+              <Link to="/deposit"><Button variant="hero">Deposit</Button></Link>
+              <Link to="/plans"><Button variant="outline">Invest</Button></Link>
+              <Link to="/withdraw"><Button variant="outline">Withdraw</Button></Link>
             </div>
           </div>
 

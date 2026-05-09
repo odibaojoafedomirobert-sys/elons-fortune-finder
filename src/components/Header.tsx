@@ -34,8 +34,10 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</Link>
             <Link to="/markets" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Markets</Link>
+            <Link to="/plans" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Plans</Link>
             {user && <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>}
             {user && <Link to="/deposit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deposit</Link>}
+            {user && <Link to="/withdraw" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Withdraw</Link>}
             {user && <Link to="/chat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Support</Link>}
             {isAdmin && <Link to="/admin" className="text-sm text-primary hover:text-primary/80 font-medium transition-colors">Admin</Link>}
             <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
@@ -65,8 +67,10 @@ export function Header() {
           <div className="md:hidden pb-4 space-y-1">
             <Link to="/" onClick={() => setOpen(false)} className="block py-2 text-sm">Home</Link>
             <Link to="/markets" onClick={() => setOpen(false)} className="block py-2 text-sm">Markets</Link>
+            <Link to="/plans" onClick={() => setOpen(false)} className="block py-2 text-sm">Plans</Link>
             {user && <Link to="/dashboard" onClick={() => setOpen(false)} className="block py-2 text-sm">Dashboard</Link>}
             {user && <Link to="/deposit" onClick={() => setOpen(false)} className="block py-2 text-sm">Deposit</Link>}
+            {user && <Link to="/withdraw" onClick={() => setOpen(false)} className="block py-2 text-sm">Withdraw</Link>}
             {user && <Link to="/chat" onClick={() => setOpen(false)} className="block py-2 text-sm">Support</Link>}
             {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="block py-2 text-sm text-primary font-medium">Admin</Link>}
             <Link to="/about" onClick={() => setOpen(false)} className="block py-2 text-sm">About</Link>
