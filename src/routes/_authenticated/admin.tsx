@@ -39,6 +39,14 @@ interface UserRow {
   created_at: string;
 }
 
+interface WithdrawalRow {
+  id: string; user_id: string; method: string; amount_usd: number;
+  destination: string; notes: string | null;
+  status: "pending" | "approved" | "rejected" | "paid";
+  admin_note: string | null; created_at: string;
+  profile?: { email: string | null; full_name: string | null; balance: number } | null;
+}
+
 const fmt = (n: number) =>
   `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
