@@ -142,7 +142,36 @@ function AdminPage() {
     }
   };
 
-  const filtered = tab === "users" ? [] : deposits.filter((d) => d.status === tab);
+  const decideWithdrawal = async (row: WithdrawalRow, status: "approved" | "rejected" | "paid") => {
+    setBusyId(row.id);
+    try {
+      const note = noteDraft[row.id] ?? row.admin_note ?? null;
+      const { error: upErr } = await supabase
+        .from("withdrawals")
+        .update({ status, admin_note: note, reviewed_at: new Date().toISOString() })
+        .eq("id", row.id);
+      if (upErr) throw upErr;
+
+      // Deduct balance on first approval/paid (only if currently pending)
+      if ((status === "approved" || status === "paid") && row.status === "pending") {
+        const currentBal = Number(row.profile?.balance ?? 0);
+        const newBal = Math.max(0, currentBal - Number(row.amount_usd));
+        const { error: balErr } = await supabase
+          .from("profiles")
+          .update({ balance: newBal })
+          .eq("id", row.user_id);
+        if (balErr) throw balErr;
+      }
+      toast.success(`Withdrawal ${status}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Action failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const filtered = tab === "users" || tab === "withdrawals" ? [] : deposits.filter((d) => d.status === tab);
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
@@ -165,12 +194,15 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
+              <TabsTrigger value="withdrawals">
+                Withdrawals ({withdrawals.filter((w) => w.status === "pending").length})
+              </TabsTrigger>
               <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             </TabsList>
 
