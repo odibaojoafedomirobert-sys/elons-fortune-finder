@@ -94,27 +94,66 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [depRes, usrRes, wdrRes] = await Promise.all([
+    const [depRes, usrRes, wdrRes, msgRes] = await Promise.all([
       supabase.from("deposits").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
       supabase.from("withdrawals").select("*").order("created_at", { ascending: false }),
+      supabase.from("support_messages").select("*").order("created_at", { ascending: false }),
     ]);
     if (depRes.error) toast.error(depRes.error.message);
     if (usrRes.error) toast.error(usrRes.error.message);
     if (wdrRes.error) toast.error(wdrRes.error.message);
+    if (msgRes.error) toast.error(msgRes.error.message);
     const rows = (depRes.data ?? []) as DepositRow[];
     const profiles = (usrRes.data ?? []) as UserRow[];
     const wdrs = (wdrRes.data ?? []) as WithdrawalRow[];
+    const msgs = (msgRes.data ?? []) as SupportMsg[];
     const map = new Map(profiles.map((p) => [p.id, p]));
     rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
     wdrs.forEach((w) => { w.profile = map.get(w.user_id) ?? null; });
+    const tmap = new Map<string, Thread>();
+    for (const m of msgs) {
+      if (!tmap.has(m.user_id)) {
+        tmap.set(m.user_id, { user_id: m.user_id, last: m, profile: map.get(m.user_id) ?? null });
+      }
+    }
     setDeposits(rows);
     setUsers(profiles);
     setWithdrawals(wdrs);
+    setThreads(Array.from(tmap.values()));
     setLoading(false);
   }, []);
 
   useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
+
+  // Load and subscribe to messages for the active thread
+  useEffect(() => {
+    if (!activeThread) { setThreadMsgs([]); return; }
+    supabase.from("support_messages").select("*")
+      .eq("user_id", activeThread).order("created_at", { ascending: true })
+      .then(({ data }) => setThreadMsgs((data as SupportMsg[]) ?? []));
+    const channel = supabase.channel(`admin-chat-${activeThread}`)
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "support_messages", filter: `user_id=eq.${activeThread}` },
+        (payload) => setThreadMsgs((prev) => [...prev, payload.new as SupportMsg]))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeThread]);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [threadMsgs]);
+
+  const sendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = reply.trim();
+    if (!content || !activeThread || !user) return;
+    setSendingReply(true);
+    const { error } = await supabase.from("support_messages").insert({
+      user_id: activeThread, sender_id: user.id, is_from_admin: true, content,
+    });
+    setSendingReply(false);
+    if (error) toast.error(error.message);
+    else { setReply(""); load(); }
+  };
 
   const viewProof = async (path: string) => {
     const { data, error } = await supabase.storage
