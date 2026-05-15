@@ -220,7 +220,8 @@ function AdminPage() {
     }
   };
 
-  const filtered = tab === "users" || tab === "withdrawals" ? [] : deposits.filter((d) => d.status === tab);
+  const isDepositTab = tab === "pending" || tab === "approved" || tab === "rejected";
+  const filtered = isDepositTab ? deposits.filter((d) => d.status === tab) : [];
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
