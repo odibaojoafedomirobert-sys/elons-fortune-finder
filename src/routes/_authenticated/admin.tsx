@@ -378,7 +378,7 @@ function AdminPage() {
               )}
             </TabsContent>
 
-            <TabsContent value={tab} className="mt-6 space-y-4">
+            <TabsContent value={isDepositTab ? tab : "__none__"} className="mt-6 space-y-4">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
               ) : filtered.length === 0 ? (
