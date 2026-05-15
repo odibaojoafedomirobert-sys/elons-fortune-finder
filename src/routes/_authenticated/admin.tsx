@@ -243,7 +243,7 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+            <TabsList className="grid w-full grid-cols-6 max-w-4xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
@@ -253,7 +253,60 @@ function AdminPage() {
                 Withdrawals ({withdrawals.filter((w) => w.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
+              <TabsTrigger value="support">Support ({threads.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="support" className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[500px]">
+                <div className="md:col-span-1 glass-card rounded-2xl p-3 space-y-1 max-h-[600px] overflow-y-auto">
+                  {threads.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-4 text-center">No conversations yet.</p>
+                  ) : threads.map((t) => (
+                    <button key={t.user_id} onClick={() => setActiveThread(t.user_id)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        activeThread === t.user_id ? "bg-primary/20" : "hover:bg-muted"
+                      }`}>
+                      <p className="font-semibold text-sm truncate">
+                        {t.profile?.full_name ?? t.profile?.display_name ?? t.profile?.email ?? t.user_id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{t.last.content}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{new Date(t.last.created_at).toLocaleString()}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="md:col-span-2 glass-card rounded-2xl flex flex-col max-h-[600px]">
+                  {!activeThread ? (
+                    <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+                      Select a conversation to reply.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {threadMsgs.map((m) => (
+                          <div key={m.id} className={`flex ${m.is_from_admin ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
+                              m.is_from_admin ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                            }`}>
+                              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                              <p className={`text-[10px] mt-1 ${m.is_from_admin ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={bottomRef} />
+                      </div>
+                      <form onSubmit={sendReply} className="border-t p-3 flex gap-2">
+                        <Input value={reply} onChange={(e) => setReply(e.target.value)}
+                          placeholder="Type a reply…" maxLength={1000} disabled={sendingReply} />
+                        <Button type="submit" variant="hero" disabled={sendingReply || !reply.trim()}>Send</Button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
 
             <TabsContent value="withdrawals" className="mt-6 space-y-3">
               {loading ? (
