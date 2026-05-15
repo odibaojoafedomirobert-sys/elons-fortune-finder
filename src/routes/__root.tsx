@@ -78,10 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "AI-powered investment platform with real-time market data and smart portfolio management." },
       { name: "author", content: "ElonTesla" },
       { property: "og:title", content: "ElonTesla — Smart Investing for the Future" },
-      { property: "og:description", content: "AI-powered investment platform with real-time market data." },
+      { property: "og:description", content: "AI-powered investment platform with real-time market data and smart portfolio management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@ElonTesla" },
+      { name: "twitter:title", content: "ElonTesla — Smart Investing for the Future" },
+      { name: "twitter:description", content: "AI-powered investment platform with real-time market data and smart portfolio management." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e4e163ce-7392-46dd-a95b-cc0f03b1f510/id-preview-ecbc1ad1--0cef9edf-5ee4-453b-8b57-f51a30788e13.lovable.app-1778836295806.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e4e163ce-7392-46dd-a95b-cc0f03b1f510/id-preview-ecbc1ad1--0cef9edf-5ee4-453b-8b57-f51a30788e13.lovable.app-1778836295806.png" },
     ],
     links: [
       {
