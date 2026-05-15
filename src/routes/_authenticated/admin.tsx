@@ -1,14 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+interface SupportMsg { id: string; user_id: string; sender_id: string; is_from_admin: boolean; content: string; created_at: string; }
+interface Thread { user_id: string; last: SupportMsg; profile?: { email: string | null; full_name: string | null; display_name: string | null } | null; }
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — ElonTesla" }] }),
@@ -58,10 +62,16 @@ function AdminPage() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users">("pending");
+  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users" | "support">("pending");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [threadMsgs, setThreadMsgs] = useState<SupportMsg[]>([]);
+  const [reply, setReply] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Verify admin
   useEffect(() => {
@@ -84,27 +94,66 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [depRes, usrRes, wdrRes] = await Promise.all([
+    const [depRes, usrRes, wdrRes, msgRes] = await Promise.all([
       supabase.from("deposits").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("id,email,display_name,full_name,phone,balance,created_at").order("created_at", { ascending: false }),
       supabase.from("withdrawals").select("*").order("created_at", { ascending: false }),
+      supabase.from("support_messages").select("*").order("created_at", { ascending: false }),
     ]);
     if (depRes.error) toast.error(depRes.error.message);
     if (usrRes.error) toast.error(usrRes.error.message);
     if (wdrRes.error) toast.error(wdrRes.error.message);
+    if (msgRes.error) toast.error(msgRes.error.message);
     const rows = (depRes.data ?? []) as DepositRow[];
     const profiles = (usrRes.data ?? []) as UserRow[];
     const wdrs = (wdrRes.data ?? []) as WithdrawalRow[];
+    const msgs = (msgRes.data ?? []) as SupportMsg[];
     const map = new Map(profiles.map((p) => [p.id, p]));
     rows.forEach((r) => { r.profile = map.get(r.user_id) ?? null; });
     wdrs.forEach((w) => { w.profile = map.get(w.user_id) ?? null; });
+    const tmap = new Map<string, Thread>();
+    for (const m of msgs) {
+      if (!tmap.has(m.user_id)) {
+        tmap.set(m.user_id, { user_id: m.user_id, last: m, profile: map.get(m.user_id) ?? null });
+      }
+    }
     setDeposits(rows);
     setUsers(profiles);
     setWithdrawals(wdrs);
+    setThreads(Array.from(tmap.values()));
     setLoading(false);
   }, []);
 
   useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
+
+  // Load and subscribe to messages for the active thread
+  useEffect(() => {
+    if (!activeThread) { setThreadMsgs([]); return; }
+    supabase.from("support_messages").select("*")
+      .eq("user_id", activeThread).order("created_at", { ascending: true })
+      .then(({ data }) => setThreadMsgs((data as SupportMsg[]) ?? []));
+    const channel = supabase.channel(`admin-chat-${activeThread}`)
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "support_messages", filter: `user_id=eq.${activeThread}` },
+        (payload) => setThreadMsgs((prev) => [...prev, payload.new as SupportMsg]))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeThread]);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [threadMsgs]);
+
+  const sendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = reply.trim();
+    if (!content || !activeThread || !user) return;
+    setSendingReply(true);
+    const { error } = await supabase.from("support_messages").insert({
+      user_id: activeThread, sender_id: user.id, is_from_admin: true, content,
+    });
+    setSendingReply(false);
+    if (error) toast.error(error.message);
+    else { setReply(""); load(); }
+  };
 
   const viewProof = async (path: string) => {
     const { data, error } = await supabase.storage
@@ -171,7 +220,8 @@ function AdminPage() {
     }
   };
 
-  const filtered = tab === "users" || tab === "withdrawals" ? [] : deposits.filter((d) => d.status === tab);
+  const isDepositTab = tab === "pending" || tab === "approved" || tab === "rejected";
+  const filtered = isDepositTab ? deposits.filter((d) => d.status === tab) : [];
 
   if (isAdmin === null) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking access…</div>;
@@ -194,7 +244,7 @@ function AdminPage() {
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+            <TabsList className="grid w-full grid-cols-6 max-w-4xl">
               <TabsTrigger value="pending">
                 Pending ({deposits.filter((d) => d.status === "pending").length})
               </TabsTrigger>
@@ -204,7 +254,60 @@ function AdminPage() {
                 Withdrawals ({withdrawals.filter((w) => w.status === "pending").length})
               </TabsTrigger>
               <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
+              <TabsTrigger value="support">Support ({threads.length})</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="support" className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[500px]">
+                <div className="md:col-span-1 glass-card rounded-2xl p-3 space-y-1 max-h-[600px] overflow-y-auto">
+                  {threads.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-4 text-center">No conversations yet.</p>
+                  ) : threads.map((t) => (
+                    <button key={t.user_id} onClick={() => setActiveThread(t.user_id)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        activeThread === t.user_id ? "bg-primary/20" : "hover:bg-muted"
+                      }`}>
+                      <p className="font-semibold text-sm truncate">
+                        {t.profile?.full_name ?? t.profile?.display_name ?? t.profile?.email ?? t.user_id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{t.last.content}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{new Date(t.last.created_at).toLocaleString()}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="md:col-span-2 glass-card rounded-2xl flex flex-col max-h-[600px]">
+                  {!activeThread ? (
+                    <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+                      Select a conversation to reply.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {threadMsgs.map((m) => (
+                          <div key={m.id} className={`flex ${m.is_from_admin ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${
+                              m.is_from_admin ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                            }`}>
+                              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                              <p className={`text-[10px] mt-1 ${m.is_from_admin ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={bottomRef} />
+                      </div>
+                      <form onSubmit={sendReply} className="border-t p-3 flex gap-2">
+                        <Input value={reply} onChange={(e) => setReply(e.target.value)}
+                          placeholder="Type a reply…" maxLength={1000} disabled={sendingReply} />
+                        <Button type="submit" variant="hero" disabled={sendingReply || !reply.trim()}>Send</Button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
 
             <TabsContent value="withdrawals" className="mt-6 space-y-3">
               {loading ? (
@@ -275,7 +378,7 @@ function AdminPage() {
               )}
             </TabsContent>
 
-            <TabsContent value={tab} className="mt-6 space-y-4">
+            <TabsContent value={isDepositTab ? tab : "__none__"} className="mt-6 space-y-4">
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
               ) : filtered.length === 0 ? (
