@@ -62,10 +62,16 @@ function AdminPage() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users">("pending");
+  const [tab, setTab] = useState<"pending" | "approved" | "rejected" | "withdrawals" | "users" | "support">("pending");
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeThread, setActiveThread] = useState<string | null>(null);
+  const [threadMsgs, setThreadMsgs] = useState<SupportMsg[]>([]);
+  const [reply, setReply] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Verify admin
   useEffect(() => {
