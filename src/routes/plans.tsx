@@ -30,6 +30,10 @@ function PlansPage() {
             </p>
           </div>
 
+          <div className="max-w-2xl mx-auto mb-12">
+            <ROICalculator />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {PLANS.map((p, idx) => (
               <div
