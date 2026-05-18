@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { PLANS } from "@/lib/plans";
 import { useAuth } from "@/hooks/useAuth";
+import { ROICalculator } from "@/components/ROICalculator";
 
 export const Route = createFileRoute("/plans")({
   head: () => ({
@@ -27,6 +28,10 @@ function PlansPage() {
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Pick a plan that matches your goals. Higher tiers unlock greater returns and dedicated support.
             </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto mb-12">
+            <ROICalculator />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
