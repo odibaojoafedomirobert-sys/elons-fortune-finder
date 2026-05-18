@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { PLANS } from "@/lib/plans";
 import { useAuth } from "@/hooks/useAuth";
+import { ROICalculator } from "@/components/ROICalculator";
 
 export const Route = createFileRoute("/plans")({
   head: () => ({
