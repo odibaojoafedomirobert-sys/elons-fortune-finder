@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PLANS } from "@/lib/plans";
+import { useServerFn } from "@tanstack/react-start";
+import { createInvestment } from "@/lib/financial.functions";
 
 export const Route = createFileRoute("/_authenticated/invest")({
   head: () => ({ meta: [{ title: "Invest — ElonTesla" }] }),
@@ -25,6 +27,7 @@ function InvestPage() {
   const [amount, setAmount] = useState("");
   const [balance, setBalance] = useState(0);
   const [busy, setBusy] = useState(false);
+  const submitInvestment = useServerFn(createInvestment);
 
   const plan = PLANS.find((p) => p.id === selected) ?? PLANS[0];
 
@@ -48,18 +51,7 @@ function InvestPage() {
     setBusy(true);
     try {
       const projected = amt * (1 + plan.roi / 100);
-      const { error: invErr } = await supabase.from("investments").insert({
-        user_id: user.id,
-        plan_name: plan.name,
-        amount_invested: amt,
-        current_value: amt,
-        roi_percent: plan.roi,
-        status: "active",
-      });
-      if (invErr) throw invErr;
-      const { error: balErr } = await supabase.from("profiles")
-        .update({ balance: balance - amt }).eq("id", user.id);
-      if (balErr) throw balErr;
+      await submitInvestment({ data: { planId: plan.id as "starter" | "pro" | "vip", amount: amt } });
       toast.success(`Invested ${amt} in ${plan.name}. Projected: $${projected.toFixed(2)}`);
       navigate({ to: "/dashboard" });
     } catch (err: any) {

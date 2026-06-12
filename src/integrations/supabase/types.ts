@@ -214,12 +214,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_investment: {
+        Args: { p_amount: number; p_plan_id: string; p_user_id: string }
+        Returns: string
+      }
+      create_withdrawal_request: {
+        Args: {
+          p_amount: number
+          p_destination: string
+          p_method: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      review_deposit: {
+        Args: {
+          p_admin_id: string
+          p_admin_note?: string
+          p_deposit_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      review_withdrawal: {
+        Args: {
+          p_admin_id: string
+          p_admin_note?: string
+          p_status: string
+          p_withdrawal_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

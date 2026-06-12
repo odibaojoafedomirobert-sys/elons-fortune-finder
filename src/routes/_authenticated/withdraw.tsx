@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useServerFn } from "@tanstack/react-start";
+import { createWithdrawal } from "@/lib/financial.functions";
 
 export const Route = createFileRoute("/_authenticated/withdraw")({
   head: () => ({ meta: [{ title: "Withdraw — ElonTesla" }] }),
@@ -31,6 +33,7 @@ function WithdrawPage() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<WithdrawalRow[]>([]);
+  const submitWithdrawal = useServerFn(createWithdrawal);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -58,14 +61,12 @@ function WithdrawPage() {
 
     setBusy(true);
     try {
-      const { error } = await supabase.from("withdrawals").insert({
-        user_id: user.id,
+      await submitWithdrawal({ data: {
         method,
-        amount_usd: parsed.data.amount,
+        amount: parsed.data.amount,
         destination: parsed.data.destination,
-        notes: parsed.data.notes || null,
-      });
-      if (error) throw error;
+        notes: parsed.data.notes || undefined,
+      } as any });
       toast.success("Withdrawal request submitted. We'll review within 24–72 hours.");
       setAmount(""); setDestination(""); setNotes("");
       load();
