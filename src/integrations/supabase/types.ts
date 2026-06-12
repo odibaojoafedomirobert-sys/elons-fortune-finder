@@ -215,7 +215,7 @@ export type Database = {
     }
     Functions: {
       create_investment: {
-        Args: { p_amount: number; p_plan_id: string }
+        Args: { p_amount: number; p_plan_id: string; p_user_id: string }
         Returns: string
       }
       create_withdrawal_request: {
@@ -224,6 +224,7 @@ export type Database = {
           p_destination: string
           p_method: string
           p_notes?: string
+          p_user_id: string
         }
         Returns: string
       }
@@ -235,11 +236,17 @@ export type Database = {
         Returns: boolean
       }
       review_deposit: {
-        Args: { p_admin_note?: string; p_deposit_id: string; p_status: string }
+        Args: {
+          p_admin_id: string
+          p_admin_note?: string
+          p_deposit_id: string
+          p_status: string
+        }
         Returns: undefined
       }
       review_withdrawal: {
         Args: {
+          p_admin_id: string
           p_admin_note?: string
           p_status: string
           p_withdrawal_id: string
