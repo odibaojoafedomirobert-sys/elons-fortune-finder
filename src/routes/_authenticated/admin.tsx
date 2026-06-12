@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useServerFn } from "@tanstack/react-start";
+import { reviewDeposit, reviewWithdrawal } from "@/lib/financial.functions";
 
 interface SupportMsg { id: string; user_id: string; sender_id: string; is_from_admin: boolean; content: string; created_at: string; }
 interface Thread { user_id: string; last: SupportMsg; profile?: { email: string | null; full_name: string | null; display_name: string | null } | null; }
@@ -72,6 +74,8 @@ function AdminPage() {
   const [reply, setReply] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const submitDepositReview = useServerFn(reviewDeposit);
+  const submitWithdrawalReview = useServerFn(reviewWithdrawal);
 
   // Verify admin
   useEffect(() => {
@@ -167,21 +171,7 @@ function AdminPage() {
     setBusyId(row.id);
     try {
       const note = noteDraft[row.id] ?? row.admin_note ?? null;
-      const { error: upErr } = await supabase
-        .from("deposits")
-        .update({ status, admin_note: note, reviewed_at: new Date().toISOString() })
-        .eq("id", row.id);
-      if (upErr) throw upErr;
-
-      if (status === "approved" && row.status !== "approved") {
-        const currentBal = Number(row.profile?.balance ?? 0);
-        const newBal = currentBal + Number(row.amount_usd);
-        const { error: balErr } = await supabase
-          .from("profiles")
-          .update({ balance: newBal })
-          .eq("id", row.user_id);
-        if (balErr) throw balErr;
-      }
+      await submitDepositReview({ data: { id: row.id, status, note: note || undefined } });
       toast.success(`Deposit ${status}`);
       await load();
     } catch (e: any) {
@@ -195,22 +185,7 @@ function AdminPage() {
     setBusyId(row.id);
     try {
       const note = noteDraft[row.id] ?? row.admin_note ?? null;
-      const { error: upErr } = await supabase
-        .from("withdrawals")
-        .update({ status, admin_note: note, reviewed_at: new Date().toISOString() })
-        .eq("id", row.id);
-      if (upErr) throw upErr;
-
-      // Deduct balance on first approval/paid (only if currently pending)
-      if ((status === "approved" || status === "paid") && row.status === "pending") {
-        const currentBal = Number(row.profile?.balance ?? 0);
-        const newBal = Math.max(0, currentBal - Number(row.amount_usd));
-        const { error: balErr } = await supabase
-          .from("profiles")
-          .update({ balance: newBal })
-          .eq("id", row.user_id);
-        if (balErr) throw balErr;
-      }
+      await submitWithdrawalReview({ data: { id: row.id, status, note: note || undefined } });
       toast.success(`Withdrawal ${status}`);
       await load();
     } catch (e: any) {
